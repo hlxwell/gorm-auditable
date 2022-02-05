@@ -1,4 +1,4 @@
-package plugin
+package auditable
 
 import (
 	"gorm.io/datatypes"
