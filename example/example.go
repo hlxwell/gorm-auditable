@@ -2,16 +2,12 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
-	"os"
-	"time"
 
 	auditable "github.com/hlxwell/gorm-auditable"
 	"github.com/labstack/echo"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 var Conn *gorm.DB
@@ -21,10 +17,12 @@ type User struct {
 	Name string `gorm:"unique;auditable"`
 }
 
+func init() {
+	setupConn()
+}
+
 func main() {
 	e := echo.New()
-	makeConn("gorm_by_example")
-
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			c.Set("current_user_id", "12344321")
@@ -42,37 +40,14 @@ func main() {
 
 // Helper Methods ============================
 
-func makeConn(name string) {
-	logLevel := logger.Error
-
-	// custom logger
-	customLogger := logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags),
-		logger.Config{
-			SlowThreshold: time.Second,
-			LogLevel:      logLevel,
-			Colorful:      true,
-		},
-	)
-
-	// data source name
+func setupConn() {
 	dsn := fmt.Sprintf(
 		"%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=true&loc=Local",
-		"root",
-		"",
-		"localhost",
-		"3306",
-		name,
+		"root", "", "localhost", "3306", "gorm_by_example",
 	)
 
-	// Init conn
 	var err error
-	Conn, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-		DisableForeignKeyConstraintWhenMigrating: true,
-		Logger:                                   customLogger,
-	})
-
-	if err != nil {
+	if Conn, err = gorm.Open(mysql.Open(dsn), &gorm.Config{}); err != nil {
 		panic(err)
 	}
 
