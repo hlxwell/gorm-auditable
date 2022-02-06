@@ -1,10 +1,10 @@
 # GORM Auditable
 
-The purpose of Gorm-Auditable project for solving user want to know the difference between each changes, also who made those changes. This project is inspired by [Paper Trail](https://github.com/paper-trail-gem/paper_trail). The difference from [QOR audited](https://github.com/qor/audited) is QOR audited only record who made the last change, but cannot show the difference.
+The purpose of Gorm-Auditable project for solving users wants to know the difference between each change, also who made those changes. This project is inspired by [Paper Trail](https://github.com/paper-trail-gem/paper_trail). The difference from [QOR audited](https://github.com/qor/audited) is QOR audited only records who made the last change but cannot show the difference.
 
 ## Features
 
-- Created a Versions Table, will record each new version of your tracked database records.
+- Be able to record each new version of your tracked database records. (only support insert and update for now)
 - Be able to track who did the change.
 
 ## How to use
@@ -17,7 +17,7 @@ Add GORM plugin with config:
 db.Use(auditable.New(auditable.Config{
   CurrentUserIDKey: "current_user_id",  // Current User ID Key from echo.Context, which is for plugin to get current operator id.
   DB:               Conn,               // Database Connection
-  AutoMigrate:      true,               // Do you need Versions table to be created automatically?
+  AutoMigrate:      true,               // Do you need *versions* table to be created automatically?
   Tables: []string{                     // All the tables you would like to track versions.
     "User",
   },
@@ -25,18 +25,18 @@ db.Use(auditable.New(auditable.Config{
 ```
 
 ### 2. Config field you would like to track.
-In your gorm model, you need to add the *auditable* to the field, otherwise it won't be recorded:
+In your gorm model, you need to add the *auditable* to the field, otherwise, it won't be recorded:
 
 ```go
 type User struct {
-	gorm.Model
-	Name string `gorm:"unique;auditable"`
+  gorm.Model
+  Name string `gorm:"unique;auditable"`
 }
 ```
 
 ### 3. Add echo middleware
 
-If you are using echo framework, there already is a middleware could inject scoped gorm object into `Context`, which is used to set `current_user_id` when insert the `Version` record.
+If you are using echo framework, there already is a middleware that could inject scoped gorm object into `Context`, which is used to set `current_user_id` when inserting the `Version` record.
 
 ```go
 e.Use(auditable.GormInjector(Conn))
