@@ -11,6 +11,14 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	DBUser     = "root"
+	DBPassword = ""
+	DBAddress  = "localhost"
+	DBPort     = "3306"
+	DBName     = "gorm_by_example"
+)
+
 var Conn *gorm.DB
 
 type User struct {
@@ -61,7 +69,7 @@ func main() {
 func setupConn() {
 	dsn := fmt.Sprintf(
 		"%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=true&loc=Local",
-		"root", "", "localhost", "3306", "gorm_by_example",
+		DBUser, DBPassword, DBAddress, DBPort, DBName,
 	)
 
 	var err error
