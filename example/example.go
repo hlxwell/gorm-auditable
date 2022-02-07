@@ -26,24 +26,33 @@ func main() {
 	e := echo.New()
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			c.Set("current_user_id", fmt.Sprintf("%d", time.Now().Nanosecond()))
+			c.Set("current_user_id", "123456789")
 			return next(c)
 		}
 	})
+
 	e.Use(auditable.GormInjector(Conn))
+
 	e.GET("/insert", func(c echo.Context) error {
 		conn := c.Get(auditable.GormDBKey).(*gorm.DB)
-		conn.Create(&User{Name: "hello-hlxwell"})
+		randomName := fmt.Sprintf("name-%d", time.Now().Nanosecond())
+		if conn.Create(&User{Name: randomName}).Error != nil {
+			return c.String(http.StatusInternalServerError, "Failed to Create.")
+		}
 		return c.String(http.StatusOK, "User Created!")
 	})
+
 	e.GET("/update", func(c echo.Context) error {
 		conn := c.Get(auditable.GormDBKey).(*gorm.DB)
 		var user User
 		conn.First(&user)
 		user.Name = fmt.Sprintf("name-%d", time.Now().Nanosecond())
-		conn.Save(&user)
+		if conn.Save(&user).Error != nil {
+			return c.String(http.StatusInternalServerError, "Failed to Update.")
+		}
 		return c.String(http.StatusOK, "Update Successfully!")
 	})
+
 	e.Logger.Fatal(e.Start(":1323"))
 }
 
