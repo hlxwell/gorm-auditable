@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	auditable "github.com/hlxwell/gorm-auditable"
 	"github.com/labstack/echo"
@@ -25,15 +26,23 @@ func main() {
 	e := echo.New()
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			c.Set("current_user_id", "12344321")
+			c.Set("current_user_id", fmt.Sprintf("%d", time.Now().Nanosecond()))
 			return next(c)
 		}
 	})
 	e.Use(auditable.GormInjector(Conn))
-	e.GET("/hello", func(c echo.Context) error {
+	e.GET("/insert", func(c echo.Context) error {
 		conn := c.Get(auditable.GormDBKey).(*gorm.DB)
 		conn.Create(&User{Name: "hello-hlxwell"})
-		return c.String(http.StatusOK, "Hello, World!")
+		return c.String(http.StatusOK, "User Created!")
+	})
+	e.GET("/update", func(c echo.Context) error {
+		conn := c.Get(auditable.GormDBKey).(*gorm.DB)
+		var user User
+		conn.First(&user)
+		user.Name = fmt.Sprintf("name-%d", time.Now().Nanosecond())
+		conn.Save(&user)
+		return c.String(http.StatusOK, "Update Successfully!")
 	})
 	e.Logger.Fatal(e.Start(":1323"))
 }
@@ -51,10 +60,14 @@ func setupConn() {
 		panic(err)
 	}
 
+	if err = Conn.AutoMigrate(&User{}); err != nil {
+		panic(err)
+	}
+
 	Conn.Use(auditable.New(auditable.Config{
 		CurrentUserIDKey: "current_user_id",
 		DB:               Conn,
-		AutoMigrate:      false,
+		AutoMigrate:      true,
 		Tables: []string{
 			"User",
 		},
