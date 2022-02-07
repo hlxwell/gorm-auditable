@@ -145,13 +145,13 @@ func (e *DBEvent) updateCallback(db *gorm.DB) {
 
 	// create a new version with serialized json.
 	objJSON, _ := json.Marshal(obj)
-	prevObjJSON, _ := json.Marshal(prevObj)
+	changesJSON, _ := getFieldChanges(prevObj, obj)
 	version := Version{
 		ItemID:        itemID,
 		ItemType:      db.Statement.Schema.Name,
 		Event:         UpdateEvent,
 		Object:        objJSON,
-		ObjectChanges: prevObjJSON,
+		ObjectChanges: changesJSON,
 		Whodunnit:     fmt.Sprintf("%v", userID),
 	}
 	e.Config.DB.Create(&version)
@@ -159,6 +159,7 @@ func (e *DBEvent) updateCallback(db *gorm.DB) {
 
 // Helper methods ===================
 
+// Get Item ID in current DB statement
 func getCurrentItemID(db *gorm.DB) uint {
 	itemID, isEmpty := db.Statement.Schema.FieldsByDBName["id"].ValueOf(db.Statement.ReflectValue)
 	if isEmpty {
@@ -172,6 +173,7 @@ func getCurrentItemID(db *gorm.DB) uint {
 	return 0
 }
 
+// getAuditableFields will extract all auditable fields to a map hash.
 func getAuditableFields(db *gorm.DB) map[string]interface{} {
 	obj := map[string]interface{}{}
 	for _, field := range db.Statement.Schema.Fields {
@@ -186,4 +188,15 @@ func getAuditableFields(db *gorm.DB) map[string]interface{} {
 	}
 
 	return obj
+}
+
+// Generate a map to list all the field changes.
+func getFieldChanges(prevItem map[string]interface{}, currentItem map[string]interface{}) ([]byte, error) {
+	result := make(map[string][]interface{})
+
+	for k, v := range prevItem {
+		result[k] = []interface{}{v, currentItem[k]}
+	}
+
+	return json.Marshal(result)
 }
